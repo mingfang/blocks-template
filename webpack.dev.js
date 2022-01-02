@@ -1,4 +1,5 @@
 const CopyPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 const path = require('path');
 const { merge } = require('webpack-merge');
 
@@ -20,13 +21,14 @@ const sanitizeName = (name) => {
 };
 
 const addRemoteEntryUrl = (content, absoluteFrom) => {
+  const remoteEntryUrl = process.env.REMOTE_ENTRY_URL
   const scope = sanitizeName(packageJson.name);
   const meta = JSON.parse(content);
   meta.moduleFederation = {
     module: path.basename(absoluteFrom, '.json'),
     scope,
     version: packageJson.version,
-    remoteEntryUrl: `http://localhost:${port}/remoteEntry.js`,
+    remoteEntryUrl: remoteEntryUrl || `http://localhost:${port}/remoteEntry.js`,
   };
   return JSON.stringify(meta);
 };
@@ -36,11 +38,17 @@ module.exports = merge(common, {
   mode: 'development',
   devtool: 'eval-source-map',
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
+    static: path.join(__dirname, 'dist'),
+    host: '0.0.0.0',
+    allowedHosts: 'all',
     port,
     historyApiFallback: true,
   },
   plugins: [
+    new webpack.DefinePlugin({
+      "process.env": process.env
+
+    }),
     new CopyPlugin({
       patterns: [
         {
